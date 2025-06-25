@@ -1,77 +1,98 @@
-from django.core.management.base import BaseCommand
 import pdfplumber
-import json
-import os
 from openai import OpenAI
+import os
 
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
-class Command(BaseCommand):
-    help = 'Extracts descriptions of tables from a PDF document using OpenAI.'
+def extract_table_descriptions_from_file(file_obj):
+    table_descriptions = []
 
-    def add_arguments(self, parser):
-        parser.add_argument('pdf_path', type=str, help='Path to the PDF file.')
+    with pdfplumber.open(file_obj) as pdf:
+        for page_number, page in enumerate(pdf.pages, start=1):
+            tables = page.find_tables()
+            words = page.extract_words()
 
-    def handle(self, *args, **kwargs):
-        pdf_path = kwargs['pdf_path']
+            for table_index, table in enumerate(tables, start=1):
+                bbox = table.bbox
 
-        if not os.path.exists(pdf_path):
-            self.stderr.write(self.style.ERROR(f"File not found: {pdf_path}"))
-            return
+                above_text = [w for w in words if w['bottom'] < bbox[1]]
+                below_text = [w for w in words if w['top'] > bbox[3]]
 
-        descriptions = self.extract_table_descriptions(pdf_path)
-        self.stdout.write(json.dumps(descriptions, indent=2, ensure_ascii=False))
+                title_line = next(
+                    (w for w in reversed(above_text)
+                     if "table" in w['text'].strip().lower() or "табела" in w['text'].strip().lower()),
+                    None
+                )
+                title_text = title_line['text'].strip() if title_line else ""
 
-    def extract_table_descriptions(self, pdf_path):
-        table_descriptions = []
+                above_snippet = " ".join(
+                    [w['text'] for w in sorted(above_text, key=lambda x: x['bottom'])][-30:])
+                below_snippet = " ".join(
+                    [w['text'] for w in sorted(below_text, key=lambda x: x['top'])][:30])
 
-        with pdfplumber.open(pdf_path) as pdf:
-            for page_number, page in enumerate(pdf.pages, start=1):
-                tables = page.find_tables()
-                words = page.extract_words()
+                has_enough_context = len(above_snippet.strip()) + len(below_snippet.strip()) >= 30
 
-                for table_index, table in enumerate(tables, start=1):
-                    bbox = table.bbox
+                table_rows = table.extract()
+                preview_data = table_rows if not has_enough_context else table_rows[:3]
 
-                    above_text = [w for w in words if w['bottom'] < bbox[1]]
-                    below_text = [w for w in words if w['top'] > bbox[3]]
+                if has_enough_context:
+                    description = generate_table_description_with_openai(title_text, above_snippet, below_snippet)
+                else:
+                    description = generate_table_description_with_openai_from_data(title_text, preview_data)
 
-                    above_snippet = " ".join([w['text'] for w in sorted(above_text, key=lambda x: x['bottom'])][-20:])
-                    below_snippet = " ".join([w['text'] for w in sorted(below_text, key=lambda x: x['top'])][:20])
+                table_descriptions.append({
+                    "page": page_number,
+                    "table_index": table_index,
+                    "description": description,
+                    "preview_data": preview_data
+                })
 
-                    description = self.generate_table_description_with_openai(above_snippet, below_snippet)
+    return table_descriptions
 
-                    table_descriptions.append({
-                        "page": page_number,
-                        "table_index": table_index,
-                        "description": description,
-                        "preview_data": table.extract()[:3]
-                    })
 
-        return table_descriptions
+def generate_table_description_with_openai_from_data(title, preview_data):
+    table_data_text = "\n".join(
+        [" | ".join(cell for cell in row if cell is not None) for row in preview_data if row]
+    )
+    prompt = (
+        f"{f'Table title: {title}\n\n' if title else ''}"
+        f"This is the beginning of a table extracted from a PDF document. "
+        f"There is not enough surrounding context, so please generate a short and meaningful description "
+        f"based only on the table's structure and initial rows.\n\n"
+        f"Table data:\n{table_data_text}\n\n"
+        f"Table description:"
+    )
 
-    def generate_table_description_with_openai(self, above, below):
-        prompt = (
-            f"This is the text that appears before and after a table in a PDF document. "
-            f"Based on this context, generate a brief and meaningful description of what the table is likely about.\n\n"
-            f"Text before the table:\n{above.strip()}\n\n"
-            f"Text after the table:\n{below.strip()}\n\n"
-            f"Table description:"
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.5,
+            max_tokens=400
         )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[Error while sending request to OpenAI: {e}]"
 
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=200
-            )
-            return response.choices[0].message.content.strip()
 
-        except Exception as e:
-            return f"[Грешка при повик до OpenAI: {e}]"
+def generate_table_description_with_openai(title, above, below):
+    prompt = (
+        f"{f'Table title: {title}\n\n' if title else ''}"
+        f"This is the text that appears before and after a table in a PDF document. "
+        f"Based on this context, generate a brief and meaningful description of what the table is likely about.\n\n"
+        f"Text before the table:\n{above.strip()}\n\n"
+        f"Text after the table:\n{below.strip()}\n\n"
+        f"Table description:"
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.5,
+            max_tokens=400
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[Error while sending request to OpenAI: {e}]"
