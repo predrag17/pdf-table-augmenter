@@ -6,12 +6,15 @@ import { UploadCloud } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 import toast from "react-hot-toast";
 import { extractTablesFromFile } from "@/service/table-augmenter-service";
+import TableModal from "@/components/table-modal";
 
 export default function Home() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [tableResults, setTableResults] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -32,13 +35,13 @@ export default function Home() {
   const handleProcess = async () => {
     if (!file) return;
     setIsProcessing(true);
-
     try {
       const data = await extractTablesFromFile(file);
-      setResult(JSON.stringify(data, null, 2));
-      console.log(data);
+      setTableResults(data);
+      setModalOpen(true);
+      setCurrentIndex(0);
     } catch (err: any) {
-      toast.error("Error while parsing the pdf file");
+      toast.error("Error while parsing the PDF file");
       console.error("Error while processing the file", err);
     } finally {
       setIsProcessing(false);
@@ -64,7 +67,6 @@ export default function Home() {
             Drag & Drop your PDF here
           </p>
           <p className="text-sm text-gray-500 mb-4">
-            {" "}
             or click to browse from your computer
           </p>
 
@@ -89,14 +91,13 @@ export default function Home() {
           </div>
         )}
 
-        {result && (
-          <div className="w-full bg-white p-6 rounded-xl shadow-sm border text-gray-800">
-            <h2 className="text-lg font-semibold mb-2">
-              Extracted Description:
-            </h2>
-            <pre className="whitespace-pre-wrap text-sm">{result}</pre>
-          </div>
-        )}
+        <TableModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tables={tableResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
       </div>
     </div>
   );
