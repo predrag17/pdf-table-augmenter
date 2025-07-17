@@ -26,8 +26,6 @@ export default function TableModal({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  const table = tables[index];
-
   return (
     <AnimatePresence>
       {open && (
@@ -47,7 +45,7 @@ export default function TableModal({
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <div
-              className="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-15 relative"
+              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] p-15 relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <Button
@@ -60,7 +58,9 @@ export default function TableModal({
 
               <div className="flex justify-between items-center mb-4">
                 <Button
-                  onClick={() => setIndex(Math.max(0, index - 1))}
+                  onClick={() => {
+                    setIndex(index - 1);
+                  }}
                   disabled={index === 0}
                   className="text-blue-600 disabled:opacity-30"
                   variant="outline"
@@ -73,9 +73,9 @@ export default function TableModal({
                 </span>
 
                 <Button
-                  onClick={() =>
-                    setIndex(Math.min(tables.length - 1, index + 1))
-                  }
+                  onClick={() => {
+                    setIndex(index + 1);
+                  }}
                   disabled={index === tables.length - 1}
                   className="text-blue-800 disabled:opacity-30"
                   variant="outline"
@@ -84,40 +84,49 @@ export default function TableModal({
                 </Button>
               </div>
 
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="overflow-auto mb-4 border rounded">
-                    <table className="min-w-full text-sm text-left border-collapse">
-                      <tbody>
-                        {table.preview_data.map(
-                          (row: string[], rowIndex: number) => (
-                            <tr key={rowIndex} className="border-b">
-                              {row.map((cell: string, colIndex: number) => (
-                                <td
-                                  key={colIndex}
-                                  className="px-3 py-2 border-r"
-                                >
-                                  {cell}
-                                </td>
-                              ))}
-                            </tr>
-                          )
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="overflow-hidden relative h-[65vh]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute w-full h-full overflow-y-auto pr-2"
+                  >
+                    {tables[index] && (
+                      <>
+                        <div className="overflow-auto mb-4 border rounded max-w-full">
+                          <table className="min-w-full text-sm text-left border-collapse">
+                            <tbody>
+                              {tables[index].preview_data.map(
+                                (row: string[], rowIndex: number) => (
+                                  <tr key={rowIndex} className="border-b">
+                                    {row.map(
+                                      (cell: string, colIndex: number) => (
+                                        <td
+                                          key={colIndex}
+                                          className="px-3 py-2 border-r"
+                                        >
+                                          {cell}
+                                        </td>
+                                      )
+                                    )}
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
 
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
-                    {table.description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
+                          {tables[index].description}
+                        </p>
+                      </>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         </>

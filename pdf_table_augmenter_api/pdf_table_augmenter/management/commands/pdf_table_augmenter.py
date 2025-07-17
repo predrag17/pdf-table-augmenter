@@ -1,110 +1,134 @@
-import pdfplumber
 import os
-import yake
+import tempfile
+from docling.document_converter import DocumentConverter
 from openai import OpenAI
+from langdetect import detect
+import yake
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-from langdetect import detect
 
-
-def extract_keywords(text, max_keywords=5):
+def extract_keywords(text: str, max_keywords=5):
     try:
-        lang = detect(text)
-        lang = "mk" if lang.startswith("mk") else "en"
+        lang = "mk" if detect(text).startswith("mk") else "en"
     except:
         lang = "en"
-
-    kw_extractor = yake.KeywordExtractor(lan=lang, n=1, top=max_keywords)
-    keywords = kw_extractor.extract_keywords(text)
-    return [kw for kw, _ in keywords]
+    kw = yake.KeywordExtractor(lan=lang, n=1, top=max_keywords)
+    return [w for w, _ in kw.extract_keywords(text)]
 
 
-def generate_llm_description_from_keywords(title, keywords):
-    keywords_text = ", ".join(keywords)
-    prompt = (
-        f"{f'Table title: {title}\n\n' if title else ''}"
-        f"These are the most important keywords extracted from the context surrounding a table: {keywords_text}.\n"
-        f"Based on these keywords, generate a short and informative description of what the table might be about."
+def generate_llm_description(chunks_before, chunks_after, title=None, keywords=None):
+    prompt_parts = []
+
+    if title:
+        prompt_parts.append(f"Table Title:\n{title}\n")
+
+    if keywords:
+        prompt_parts.append("Relevant Keywords:\n" + ", ".join(keywords) + "\n")
+
+    if chunks_before:
+        prompt_parts.append("Context Before the Table:\n" + "\n".join(chunks_before) + "\n")
+
+    if chunks_after:
+        prompt_parts.append("Context After the Table:\n" + "\n".join(chunks_after) + "\n")
+
+    prompt_parts.append(
+        "Based on the surrounding context, provide a clear and concise description "
+        "of what this table represents. Focus on the purpose, contents, and insights "
+        "the table might provide. Ensure the description is coherent and relevant to the provided context."
     )
+
+    prompt = "\n---\n".join(prompt_parts)
+
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
-            max_tokens=400
+            max_tokens=700
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return f"[Error generating description from keywords: {e}]"
-
-
-def generate_table_description_with_openai_from_data(title, preview_data):
-    table_data_text = "\n".join(
-        [" | ".join(cell for cell in row if cell is not None) for row in preview_data if row]
-    )
-    title_line = f"Table title: {title}\n\n" if title else ""
-    prompt = (
-        f"{title_line}"
-        "This is the beginning of a table extracted from a PDF document. "
-        "There is not enough surrounding context, so please generate a short and meaningful description "
-        "based only on the table's structure and initial rows.\n\n"
-        f"Table data:\n{table_data_text}\n\n"
-        "Table description:"
-    )
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
-            max_tokens=400
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"[Error while sending request to OpenAI: {e}]"
+        return f"Error generating description: {str(e)}"
 
 
 def extract_table_descriptions_from_file(file_obj):
-    table_descriptions = []
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file_obj.read())
+        tmp_path = tmp.name
 
-    with pdfplumber.open(file_obj) as pdf:
-        for page_number, page in enumerate(pdf.pages, start=1):
-            tables = page.find_tables()
-            words = page.extract_words()
+    try:
+        converter = DocumentConverter()
+        result = converter.convert(tmp_path)
+        doc = result.document.export_to_dict()
 
-            for table_index, table in enumerate(tables, start=1):
-                bbox = table.bbox
+        texts = doc.get("texts", [])
+        tables = doc.get("tables", [])
+        outputs = []
 
-                above_text = [w for w in words if w['bottom'] < bbox[1]]
-                below_text = [w for w in words if w['top'] > bbox[3]]
+        for idx, table in enumerate(tables):
+            body_children = doc.get("body", {}).get("children", [])
+            table_ref = f"#/tables/{idx}"
+            table_index_in_body = next(
+                (i for i, child in enumerate(body_children) if child.get("$ref") == table_ref),
+                None
+            )
 
-                title_line = next(
-                    (w for w in reversed(above_text)
-                     if "table" in w['text'].strip().lower() or "табела" in w['text'].strip().lower()),
-                    None
-                )
-                title_text = title_line['text'].strip() if title_line else ""
+            if table_index_in_body is None:
+                continue
 
-                above_snippet = " ".join(
-                    [w['text'] for w in sorted(above_text, key=lambda x: x['bottom'])][-30:])
-                below_snippet = " ".join(
-                    [w['text'] for w in sorted(below_text, key=lambda x: x['top'])][:30])
+            chunks_before = []
+            chunks_after = []
+            for i, child in enumerate(body_children):
+                if child.get("$ref") == table_ref:
+                    for j in range(max(0, i - 3), i):
+                        if body_children[j].get("$ref", "").startswith("#/texts/"):
+                            text_idx = int(body_children[j]["$ref"].split("/")[-1])
+                            chunks_before.append(texts[text_idx]["text"])
 
-                has_enough_context = len(above_snippet.strip()) + len(below_snippet.strip()) >= 30
-                table_rows = table.extract()
-                preview_data = table_rows if not has_enough_context else table_rows
+                    for j in range(i + 1, min(i + 4, len(body_children))):
+                        if body_children[j].get("$ref", "").startswith("#/texts/"):
+                            text_idx = int(body_children[j]["$ref"].split("/")[-1])
+                            chunks_after.append(texts[text_idx]["text"])
+                    break
 
-                if has_enough_context:
-                    keywords = extract_keywords(above_snippet + " " + below_snippet)
-                    description = generate_llm_description_from_keywords(title_text, keywords)
-                else:
-                    description = generate_table_description_with_openai_from_data(title_text, preview_data)
+            if not chunks_before and not chunks_after:
+                try:
+                    df = table["data"].export_to_dataframe()
+                    preview_rows = df.head(3).to_string(index=False)
+                    chunks_before = [f"Table preview data:\n{preview_rows}"]
+                except Exception:
+                    chunks_before = ["[No context or data could be extracted from the table]"]
 
-                table_descriptions.append({
-                    "page": page_number,
-                    "table_index": table_index,
-                    "description": description,
-                    "preview_data": preview_data
-                })
+            page_number = table.get("prov", [{}])[0].get("page_no", 1)
 
-    return table_descriptions
+            title = table.get("captions", [{}])[0].get("text") if table.get("captions") else None
+            if title and not title.isupper():
+                title = None
+
+            context_text = "\n".join(chunks_before + chunks_after)
+            keywords = extract_keywords(context_text) if context_text.strip() else None
+
+            description = generate_llm_description(chunks_before, chunks_after, title, keywords)
+
+            try:
+                table_data = table["data"]["grid"]
+                preview_data = [[cell["text"] for cell in row] for row in table_data]
+            except Exception:
+                preview_data = []
+
+            outputs.append({
+                "page": page_number,
+                "table_index": idx + 1,
+                "description": description,
+                "preview_data": preview_data
+            })
+
+        return outputs
+
+    except Exception as e:
+        return [{"error": f"Failed to process PDF: {str(e)}"}]
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)

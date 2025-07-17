@@ -7,3 +7,4 @@ openai==1.91.0
 django-cors-headers==4.7.0
 yake==0.4.8
 langdetect==1.0.9
+docling==2.39.0

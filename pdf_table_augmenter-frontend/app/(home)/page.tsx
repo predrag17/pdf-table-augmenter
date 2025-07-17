@@ -37,9 +37,13 @@ export default function Home() {
     setIsProcessing(true);
     try {
       const data = await extractTablesFromFile(file);
-      setTableResults(data);
-      setModalOpen(true);
-      setCurrentIndex(0);
+      if (data.length > 0) {
+        setTableResults(data);
+        setModalOpen(true);
+        setCurrentIndex(0);
+      } else {
+        toast.error("The uploaded PDF does not contain any tables.");
+      }
     } catch (err: any) {
       toast.error("Error while parsing the PDF file");
       console.error("Error while processing the file", err);
