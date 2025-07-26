@@ -22,7 +22,7 @@ pdf-table-augmenter is built using modern web technologies to ensure scalability
 ### Backend:
 
 - **Django Rest Framework**: Facilitates the creation of RESTful APIs, allowing seamless integration with the frontend.
-- 
+   
 ### Frontend:
 
 - **Next.js with TypeScript**: A modern framework that combines the performance and flexibility of Next.js with the safety and developer experience of TypeScript, enabling scalable, type-safe web applications.
@@ -43,7 +43,7 @@ Ensure you have the following installed on your system:
 
 - Python 3.9+
 - Node.js 16+
-- 
+  
 ### Environment Variables
 
 Create a `.env` file in the `backend` and `frontend` directories and add necessary environment variables (e.g., database credentials, API keys).
