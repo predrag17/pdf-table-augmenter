@@ -21,3 +21,25 @@ export const extractTablesFromFile = async (file: File) => {
     throw error;
   }
 };
+
+export const askQuestion = async (question: string, description: string) => {
+  try {
+    const response = await axiosInstance.post(
+      "/ask-question",
+      {
+        question,
+        table_description: description,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching answer", error);
+    throw error;
+  }
+};

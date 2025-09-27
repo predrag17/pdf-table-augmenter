@@ -1,9 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect } from "react";
+import { X, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
+import ChatbotModal from "./chatbot";
+import { askQuestion } from "@/service/table-augmenter-service";
 
 export default function TableModal({
   open,
@@ -18,6 +20,30 @@ export default function TableModal({
   index: number;
   setIndex: (i: number) => void;
 }) {
+  const [chatbotOpen, setChatbotOpen] = useState(false);
+
+  const suggestedQuestions = [
+    "What is the main purpose of this table?",
+    "What are the key metrics shown?",
+    "How do the values compare across rows?",
+    "What trends are evident in the data?",
+    "What is the highest value in the table?",
+    "Are there any outliers in the data?",
+    "What insights can be drawn from the table?",
+    "Are there any year-over-year changes?",
+  ];
+
+  const askQuestionHandler = async (question: string) => {
+    try {
+      const response = await askQuestion(question, tables[index].description);
+
+      return response.answer;
+    } catch (err) {
+      console.error("Error fetching answer:", err);
+      return "Error answering question.";
+    }
+  };
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -45,22 +71,22 @@ export default function TableModal({
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <div
-              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] p-15 relative overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] p-6 relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <Button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                variant="ghost"
-              >
-                <X />
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600"
+                  variant="ghost"
+                >
+                  <X />
+                </Button>
+              </div>
 
               <div className="flex justify-between items-center mb-4">
                 <Button
-                  onClick={() => {
-                    setIndex(index - 1);
-                  }}
+                  onClick={() => setIndex(index - 1)}
                   disabled={index === 0}
                   className="text-blue-600 disabled:opacity-30"
                   variant="outline"
@@ -73,14 +99,23 @@ export default function TableModal({
                 </span>
 
                 <Button
-                  onClick={() => {
-                    setIndex(index + 1);
-                  }}
+                  onClick={() => setIndex(index + 1)}
                   disabled={index === tables.length - 1}
                   className="text-blue-800 disabled:opacity-30"
                   variant="outline"
                 >
                   <ChevronRight />
+                </Button>
+              </div>
+
+              <div className="flex justify-end mb-4">
+                <Button
+                  onClick={() => setChatbotOpen(true)}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Ask About Table
                 </Button>
               </div>
 
@@ -119,14 +154,23 @@ export default function TableModal({
                           </table>
                         </div>
 
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
-                          {tables[index].description}
-                        </p>
+                        <div className="flex-row justify-center p-7">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
+                            {tables[index].description}
+                          </p>
+                        </div>
                       </>
                     )}
                   </motion.div>
                 </AnimatePresence>
               </div>
+
+              <ChatbotModal
+                open={chatbotOpen}
+                onClose={() => setChatbotOpen(false)}
+                askQuestion={askQuestionHandler}
+                suggestedQuestions={suggestedQuestions}
+              />
             </div>
           </motion.div>
         </>

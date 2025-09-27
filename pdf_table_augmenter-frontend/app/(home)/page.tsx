@@ -2,19 +2,35 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { UploadCloud } from "lucide-react";
+import {
+  ImageIcon,
+  RemoveFormatting,
+  TableIcon,
+  UploadCloud,
+} from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 import toast from "react-hot-toast";
 import { extractTablesFromFile } from "@/service/table-augmenter-service";
 import TableModal from "@/components/table-modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Home() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [tableResults, setTableResults] = useState<any[]>([]);
+  const [imageResults, setImageResults] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [extractOption, setExtractOption] = useState<
+    "tables" | "images" | "formulas" | null
+  >(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -29,20 +45,24 @@ export default function Home() {
     const droppedFile = e.dataTransfer?.files?.[0];
     if (droppedFile && droppedFile.type === "application/pdf") {
       setFile(droppedFile);
+      setExtractOption(null);
     }
   }, []);
 
   const handleProcess = async () => {
-    if (!file) return;
+    if (!file || !extractOption) return;
     setIsProcessing(true);
     try {
-      const data = await extractTablesFromFile(file);
-      if (data.length > 0) {
-        setTableResults(data);
-        setModalOpen(true);
-        setCurrentIndex(0);
-      } else {
-        toast.error("The uploaded PDF does not contain any tables.");
+      if (extractOption === "tables") {
+        const data = await extractTablesFromFile(file);
+        if (data.length > 0) {
+          setTableResults(data);
+          setImageResults([]);
+          setModalOpen(true);
+          setCurrentIndex(0);
+        } else {
+          toast.error("The uploaded PDF does not contain any tables.");
+        }
       }
     } catch (err: any) {
       toast.error("Error while parsing the PDF file");
@@ -79,6 +99,7 @@ export default function Home() {
               value: file,
               onChange: (file: File | null) => {
                 setFile(file);
+                setExtractOption(null);
               },
             }}
           />
@@ -87,16 +108,45 @@ export default function Home() {
         {file && (
           <div className="w-full bg-white p-6 rounded-xl shadow-sm border text-gray-700">
             <p className="text-sm mb-4 text-gray-500">
-              Do you want to process this file?
+              Select what to extract from the PDF:
             </p>
-            <Button onClick={handleProcess} disabled={isProcessing}>
+            <div className="mb-4">
+              <Select
+                value={extractOption || undefined}
+                onValueChange={(value) =>
+                  setExtractOption(
+                    value as "tables" | "images" | "formulas" | null
+                  )
+                }
+              >
+                <SelectTrigger className="w-50">
+                  <SelectValue placeholder="Select an option" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tables">
+                    <TableIcon />
+                    Table
+                  </SelectItem>
+                  <SelectItem value="images">
+                    <ImageIcon /> Image
+                  </SelectItem>
+                  <SelectItem value="formulas">
+                    <RemoveFormatting /> Formula
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleProcess}
+              disabled={isProcessing || !extractOption}
+            >
               {isProcessing ? "Processing..." : "Process PDF"}
             </Button>
           </div>
         )}
 
         <TableModal
-          open={modalOpen}
+          open={modalOpen && extractOption === "tables"}
           onClose={() => setModalOpen(false)}
           tables={tableResults}
           index={currentIndex}
