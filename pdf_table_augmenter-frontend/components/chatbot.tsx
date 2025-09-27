@@ -29,6 +29,7 @@ export default function ChatbotModal({
     useState<boolean>(true);
 
   const handleAsk = async (q: string) => {
+    setSuggestedQuestionClose(false);
     setIsLoading(true);
     try {
       const answer = await askQuestion(q);

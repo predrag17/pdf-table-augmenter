@@ -6,7 +6,7 @@ export const extractTablesFromFile = async (file: File) => {
     formData.append("pdf", file);
 
     const response = await axiosInstance.post(
-      "/extract-description",
+      "/extract-description/tables",
       formData,
       {
         headers: {
@@ -14,6 +14,30 @@ export const extractTablesFromFile = async (file: File) => {
         },
       }
     );
+
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching categories", error);
+    throw error;
+  }
+};
+
+export const extractImagesFromFile = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    const response = await axiosInstance.post(
+      "/extract-description/images",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    console.log(response.data);
 
     return response.data;
   } catch (error: any) {

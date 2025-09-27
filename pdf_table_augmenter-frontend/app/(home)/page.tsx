@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 import toast from "react-hot-toast";
-import { extractTablesFromFile } from "@/service/table-augmenter-service";
+import {
+  extractImagesFromFile,
+  extractTablesFromFile,
+} from "@/service/table-augmenter-service";
 import TableModal from "@/components/table-modal";
 import {
   Select,
@@ -19,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ImageModal from "@/components/image-modal";
 
 export default function Home() {
   const [dragActive, setDragActive] = useState(false);
@@ -26,7 +30,8 @@ export default function Home() {
   const [tableResults, setTableResults] = useState<any[]>([]);
   const [imageResults, setImageResults] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [tableModalOpen, setTableModalOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [extractOption, setExtractOption] = useState<
     "tables" | "images" | "formulas" | null
@@ -58,10 +63,20 @@ export default function Home() {
         if (data.length > 0) {
           setTableResults(data);
           setImageResults([]);
-          setModalOpen(true);
+          setTableModalOpen(true);
           setCurrentIndex(0);
         } else {
           toast.error("The uploaded PDF does not contain any tables.");
+        }
+      } else if (extractOption === "images") {
+        const data = await extractImagesFromFile(file);
+        if (data.length > 0) {
+          setImageResults(data);
+          setTableResults([]);
+          setImageModalOpen(true);
+          setCurrentIndex(0);
+        } else {
+          toast.error("The uploaded PDF does not contain any images.");
         }
       }
     } catch (err: any) {
@@ -146,9 +161,17 @@ export default function Home() {
         )}
 
         <TableModal
-          open={modalOpen && extractOption === "tables"}
-          onClose={() => setModalOpen(false)}
+          open={tableModalOpen && extractOption === "tables"}
+          onClose={() => setTableModalOpen(false)}
           tables={tableResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
+
+        <ImageModal
+          open={imageModalOpen && extractOption === "images"}
+          onClose={() => setImageModalOpen(false)}
+          images={imageResults}
           index={currentIndex}
           setIndex={setCurrentIndex}
         />
