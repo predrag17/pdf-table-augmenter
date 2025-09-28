@@ -96,3 +96,26 @@ def extract_formula_caption(formula, body_children, formula_index_in_body, texts
                     continue
 
     return caption
+
+
+def sanitize_latex(text):
+    if not text:
+        return "\\text{No formula data}"
+
+    replacements = {
+        '\u02c6': '^',
+        '\u00b2': '^2',
+        '\u00b3': '^3',
+        '\u00b1': '\\pm',
+        '\u2212': '-',
+        '\u00d7': '\\times',
+        '\u00f7': '\\div',
+        '\u03b1': '\\alpha',
+        '\u03b2': '\\beta',
+        '\u03b3': '\\gamma',
+    }
+    for unicode_char, latex_equiv in replacements.items():
+        text = text.replace(unicode_char, latex_equiv)
+
+    text = re.sub(r'[^\x00-\x7F]', '', text)
+    return text or "\\text{No formula data}"

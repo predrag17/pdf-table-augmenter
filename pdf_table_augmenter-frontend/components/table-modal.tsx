@@ -170,6 +170,7 @@ export default function TableModal({
                 onClose={() => setChatbotOpen(false)}
                 askQuestion={askQuestionHandler}
                 suggestedQuestions={suggestedQuestions}
+                title="Ask About this Table"
               />
             </div>
           </motion.div>

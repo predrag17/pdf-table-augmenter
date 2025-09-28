@@ -154,6 +154,7 @@ export default function ImageModal({
                 onClose={() => setChatbotOpen(false)}
                 askQuestion={askQuestionHandler}
                 suggestedQuestions={suggestedQuestions}
+                title="Ask About this Image"
               />
             </div>
           </motion.div>

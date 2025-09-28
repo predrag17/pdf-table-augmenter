@@ -194,7 +194,7 @@ export default function Home() {
         />
 
         <FormulaModal
-          open={imageModalOpen && extractOption === "formulas"}
+          open={formulaModalOpen && extractOption === "formulas"}
           onClose={() => setFormulaModalOpen(false)}
           formulas={formulaResults}
           index={currentIndex}

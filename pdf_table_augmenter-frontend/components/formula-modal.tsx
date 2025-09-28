@@ -9,6 +9,14 @@ import { askQuestion } from "@/service/table-augmenter-service";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
+const sanitizeLatex = (latex: string): string => {
+  if (!latex) return "\\text{No formula data}";
+  return (
+    latex.replace(/\u02c6/g, "^").replace(/[^\x00-\x7F]/g, "") ||
+    "\\text{No formula data}"
+  );
+};
+
 export default function FormulaModal({
   open,
   onClose,
@@ -136,10 +144,7 @@ export default function FormulaModal({
                         <div className="mb-4 flex justify-center">
                           <div className="text-2xl p-4 bg-gray-50 rounded border">
                             <InlineMath
-                              math={
-                                formulas[index].preview_data ||
-                                "\\text{No equation data}"
-                              }
+                              math={sanitizeLatex(formulas[index].preview_data)}
                             />
                           </div>
                         </div>
@@ -160,6 +165,7 @@ export default function FormulaModal({
                 onClose={() => setChatbotOpen(false)}
                 askQuestion={askQuestionHandler}
                 suggestedQuestions={suggestedQuestions}
+                title="Ask About this Formula"
               />
             </div>
           </motion.div>

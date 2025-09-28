@@ -7,7 +7,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 
 from pdf_table_augmenter.management.commands.reusable_functions_for_formula import extract_formula_caption, \
-    generate_formula_llm_description
+    generate_formula_llm_description, sanitize_latex
 from pdf_table_augmenter.management.commands.reusable_functions_for_table import roman_numeral
 
 
@@ -156,12 +156,16 @@ def extract_formula_descriptions_from_file(file_obj):
                             chunks_after.append(text_content)
 
             try:
-                formula_preview = formula.get("orig") or formula.get("latex") or formula.get("mathml") or formula.get(
-                    "text") or formula.get("data", "")
-                if not formula_preview:
-                    formula_preview = "[No formula data could be extracted]"
+                formula_preview = sanitize_latex(
+                    formula.get("orig") or
+                    formula.get("latex") or
+                    formula.get("mathml") or
+                    formula.get("text") or
+                    formula.get("data") or
+                    "\\text{No formula data}"
+                )
             except Exception as e:
-                formula_preview = f"[Error extracting formula data: {str(e)}]"
+                formula_preview = f"\\text{{Error extracting formula data: {str(e)}}}"
 
             description = generate_formula_llm_description(chunks_before, chunks_after, title, formula_preview)
 

@@ -12,6 +12,7 @@ interface ChatbotModalProps {
   onClose: () => void;
   askQuestion: (question: string) => Promise<string>;
   suggestedQuestions: string[];
+  title: string;
 }
 
 export default function ChatbotModal({
@@ -19,6 +20,7 @@ export default function ChatbotModal({
   onClose,
   askQuestion,
   suggestedQuestions,
+  title,
 }: ChatbotModalProps) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<
@@ -77,9 +79,7 @@ export default function ChatbotModal({
               >
                 <X />
               </Button>
-              <h2 className="text-lg font-semibold mb-4">
-                Ask About This Table
-              </h2>
+              <h2 className="text-lg font-semibold mb-4">{title}</h2>
               <div className="max-h-[50vh] overflow-y-auto mb-4">
                 {messages.map((msg, idx) => (
                   <div key={idx} className="mb-4">
