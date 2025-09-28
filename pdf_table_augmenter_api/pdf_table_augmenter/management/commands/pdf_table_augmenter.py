@@ -5,7 +5,7 @@ import re
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
-from pdf_table_augmenter.management.commands.reusable_functions import extract_caption, roman_numeral, get_cell_text, \
+from pdf_table_augmenter.management.commands.reusable_functions_for_table import extract_caption, roman_numeral, get_cell_text, \
     generate_table_llm_description
 
 

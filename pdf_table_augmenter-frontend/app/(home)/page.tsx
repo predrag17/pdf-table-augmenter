@@ -11,6 +11,7 @@ import {
 import FileUploader from "@/components/file-uploader";
 import toast from "react-hot-toast";
 import {
+  extractFormulasFromFile,
   extractImagesFromFile,
   extractTablesFromFile,
 } from "@/service/table-augmenter-service";
@@ -23,15 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ImageModal from "@/components/image-modal";
+import FormulaModal from "@/components/formula-modal";
 
 export default function Home() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [tableResults, setTableResults] = useState<any[]>([]);
   const [imageResults, setImageResults] = useState<any[]>([]);
+  const [formulaResults, setFormulaResults] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [extractOption, setExtractOption] = useState<
     "tables" | "images" | "formulas" | null
@@ -63,6 +67,7 @@ export default function Home() {
         if (data.length > 0) {
           setTableResults(data);
           setImageResults([]);
+          setFormulaResults([]);
           setTableModalOpen(true);
           setCurrentIndex(0);
         } else {
@@ -73,10 +78,22 @@ export default function Home() {
         if (data.length > 0) {
           setImageResults(data);
           setTableResults([]);
+          setFormulaResults([]);
           setImageModalOpen(true);
           setCurrentIndex(0);
         } else {
           toast.error("The uploaded PDF does not contain any images.");
+        }
+      } else if (extractOption === "formulas") {
+        const data = await extractFormulasFromFile(file);
+        if (data.length > 0) {
+          setFormulaResults(data);
+          setTableResults([]);
+          setImageResults([]);
+          setImageModalOpen(true);
+          setCurrentIndex(0);
+        } else {
+          toast.error("The uploaded PDF does not contain any formulas.");
         }
       }
     } catch (err: any) {
@@ -172,6 +189,14 @@ export default function Home() {
           open={imageModalOpen && extractOption === "images"}
           onClose={() => setImageModalOpen(false)}
           images={imageResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
+
+        <FormulaModal
+          open={imageModalOpen && extractOption === "formulas"}
+          onClose={() => setFormulaModalOpen(false)}
+          formulas={formulaResults}
           index={currentIndex}
           setIndex={setCurrentIndex}
         />

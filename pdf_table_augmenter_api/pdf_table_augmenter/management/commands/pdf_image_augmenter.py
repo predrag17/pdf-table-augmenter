@@ -6,8 +6,8 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
-from pdf_table_augmenter.management.commands.reusable_functions import extract_caption, roman_numeral, \
-    generate_image_llm_description
+from pdf_table_augmenter.management.commands.reusable_functions_for_image import generate_image_llm_description
+from pdf_table_augmenter.management.commands.reusable_functions_for_table import extract_caption, roman_numeral
 
 
 def extract_image_descriptions_from_file(file_obj):
@@ -28,33 +28,31 @@ def extract_image_descriptions_from_file(file_obj):
 
         result = converter.convert(tmp_path)
         doc = result.document.export_to_dict()
-        print(doc)
         print(f"Document parsed: {len(doc.get('texts', []))} texts, {len(doc.get('pictures', []))} images")
 
         texts = doc.get("texts", [])
         body_children = doc.get("body", {}).get("children", [])
 
         valid_images = []
-        for image in doc.get("figures", []):
+        for idx, image in enumerate(doc.get("pictures", [])):
             prov = image.get("prov", [])
             if prov and isinstance(prov, list) and len(prov) > 0:
                 valid_images.append(image)
             else:
-                print(f"Skipping invalid image: {image.get('captions', [])}")
+                print(f"Skipping invalid image {idx + 1}: {image.get('captions', [])}")
 
         for idx, image in enumerate(valid_images):
             image["index"] = idx
 
         outputs = []
         for idx, image in enumerate(valid_images):
-            image_ref = f"#/figures/{image.get('index', idx)}"
+            image_ref = f"#/pictures/{image.get('index', idx)}"
             image_index_in_body = next(
                 (i for i, child in enumerate(body_children) if child.get("$ref") == image_ref),
                 None
             )
 
             if image_index_in_body is None:
-                print(f"Image {idx + 1} not found in body.children, skipping")
                 continue
 
             prov = image.get("prov", [])
@@ -69,7 +67,6 @@ def extract_image_descriptions_from_file(file_obj):
                                  re.IGNORECASE)
                 if match:
                     ref_id = f"{match.group(1)} {match.group(2)}"
-            print(f"Image {idx + 1}: Using title: '{title}', ref_id: '{ref_id}'")
 
             roman_id = roman_numeral(idx + 1)
             image_ref_patterns = [
@@ -113,7 +110,6 @@ def extract_image_descriptions_from_file(file_obj):
                             chunks_before.append(text_content)
                         elif i > image_index_in_body:
                             chunks_after.append(text_content)
-
             try:
                 metadata = image.get("metadata", {})
                 if metadata:
@@ -123,15 +119,20 @@ def extract_image_descriptions_from_file(file_obj):
             except Exception as e:
                 image_metadata = f"[Error extracting image metadata: {str(e)}]"
 
-            description = generate_image_llm_description(chunks_before, chunks_after, title, image_metadata)
+            try:
+                base64_uri = image.get("image", {}).get("uri", "")
+                if not base64_uri:
+                    base64_uri = "[No base64 URI available]"
+            except Exception as e:
+                base64_uri = f"[Error extracting base64 URI: {str(e)}]"
 
-            preview_data = []
+            description = generate_image_llm_description(chunks_before, chunks_after, title, image_metadata)
 
             outputs.append({
                 "page": page_display,
                 "image_index": idx + 1,
                 "description": description,
-                "preview_data": preview_data
+                "base64": base64_uri
             })
 
         print(f"Returning {len(outputs)} image descriptions")
