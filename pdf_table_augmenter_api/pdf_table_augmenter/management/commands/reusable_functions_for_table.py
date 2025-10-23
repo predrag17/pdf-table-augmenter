@@ -43,8 +43,8 @@ def generate_table_llm_description(chunks_before, chunks_after, title=None, tabl
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-            max_tokens=1500
+            temperature=0.2,
+            max_tokens=1000
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -108,4 +108,36 @@ def extract_caption(table, body_children, table_index_in_body, texts):
     return caption
 
 
+def generate_table_only_description(table_data_preview: str) -> str:
+    cleaned_preview = "\n".join(line.strip() for line in table_data_preview.splitlines() if line.strip())
 
+    prompt = f"""You are a data analyst. Your job is to explain the following table in 2–4 clear sentences.
+
+        Table Data (tab-separated rows):
+        
+        {cleaned_preview}
+        
+        INSTRUCTIONS:
+        1. If the table is clear (has headers, meaningful rows), explain:
+           - What it shows
+           - Key columns and their meaning
+           - Main insights or trends
+           - Likely purpose
+        
+        2. If the table is unclear, incomplete, or meaningless (e.g. missing headers, random numbers, OCR errors), respond with:
+        
+           "The table data is unclear or incomplete. I cannot provide a reliable description without headers or context."
+        
+        Do NOT hallucinate or make up information. Be honest and concise.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=1000
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[LLM ERROR] {str(e)}"

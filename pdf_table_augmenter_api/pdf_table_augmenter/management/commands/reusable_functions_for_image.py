@@ -34,8 +34,8 @@ def generate_image_llm_description(chunks_before, chunks_after, title=None, imag
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-            max_tokens=1500
+            temperature=0.2,
+            max_tokens=1000
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
