@@ -1,7 +1,8 @@
 from django.urls import path
 
 from pdf_table_augmenter.views import ExtractDescriptionAPIView, AskQuestionAPIView, ExtractDescriptionForImagesAPIView, \
-    ExtractDescriptionForFormulasAPIView
+    ExtractDescriptionForFormulasAPIView, \
+    ExtractTableDataOnlyDescriptionForTablesAPIView, ExtractContextDescriptionForTablesAPIView
 
 urlpatterns = [
     path("extract-description/tables", ExtractDescriptionAPIView.as_view(), name="extract_description_tables"),
@@ -9,4 +10,8 @@ urlpatterns = [
     path("extract-description/formulas", ExtractDescriptionForFormulasAPIView.as_view(),
          name="extract_description_equations"),
     path("ask-question", AskQuestionAPIView.as_view(), name="ask-question"),
+    path("extract-description/first-case/tables", ExtractTableDataOnlyDescriptionForTablesAPIView.as_view(),
+         name="table_data_only"),
+    path("extract-description/second-case/tables", ExtractContextDescriptionForTablesAPIView.as_view(),
+         name="table_context"),
 ]

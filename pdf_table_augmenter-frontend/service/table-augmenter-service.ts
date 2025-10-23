@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosInstance from "@/config/axiosInstance";
 
 export const extractTablesFromFile = async (file: File) => {
