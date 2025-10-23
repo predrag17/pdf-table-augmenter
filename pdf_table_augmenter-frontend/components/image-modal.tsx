@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,12 +53,14 @@ export default function ImageModal({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  if (!images[index]) return null;
+
   return (
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/70 z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -70,55 +74,59 @@ export default function ImageModal({
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <div
-              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] p-6 relative overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-end">
-                <Button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600"
-                  variant="ghost"
-                >
-                  <X />
-                </Button>
+              <div className="p-6 border-b flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={() => setIndex(index - 1)}
+                    disabled={index === 0}
+                    className="text-blue-600 disabled:opacity-30"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+
+                  <span className="text-sm text-gray-500 font-medium">
+                    Image {index + 1} of {images.length}
+                  </span>
+
+                  <Button
+                    onClick={() => setIndex(index + 1)}
+                    disabled={index === images.length - 1}
+                    className="text-blue-600 disabled:opacity-30"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setChatbotOpen(true)}
+                    className="flex items-center gap-2 text-sm"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Ask Question
+                  </Button>
+
+                  <Button
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-gray-600"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center mb-4">
-                <Button
-                  onClick={() => setIndex(index - 1)}
-                  disabled={index === 0}
-                  className="text-blue-600 disabled:opacity-30"
-                  variant="outline"
-                >
-                  <ChevronLeft />
-                </Button>
-
-                <span className="text-sm text-gray-500">
-                  Image {index + 1} of {images.length} ({images[index]?.page})
-                </span>
-
-                <Button
-                  onClick={() => setIndex(index + 1)}
-                  disabled={index === images.length - 1}
-                  className="text-blue-800 disabled:opacity-30"
-                  variant="outline"
-                >
-                  <ChevronRight />
-                </Button>
-              </div>
-
-              <div className="flex justify-end mb-4">
-                <Button
-                  onClick={() => setChatbotOpen(true)}
-                  className="flex items-center gap-2"
-                  variant="outline"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Ask About Image
-                </Button>
-              </div>
-
-              <div className="overflow-hidden relative h-[65vh]">
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={index}
@@ -126,38 +134,42 @@ export default function ImageModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -50 }}
                     transition={{ duration: 0.3 }}
-                    className="absolute w-full h-full overflow-y-auto pr-2"
+                    className="flex-1 flex flex-col overflow-hidden"
                   >
-                    {images[index] && (
-                      <>
-                        <div className="mb-4 flex justify-center">
-                          <img
-                            src={images[index].base64}
-                            alt={`Image ${index + 1}`}
-                            className="max-w-full max-h-[50vh] object-contain rounded border"
-                          />
-                        </div>
+                    <div className="flex-1 overflow-y-auto p-6 border-b">
+                      <div className="flex justify-center">
+                        <img
+                          src={images[index].base64}
+                          alt={`Image ${index + 1}`}
+                          className="max-w-full max-h-[50vh] object-contain rounded border"
+                        />
+                      </div>
+                    </div>
 
-                        <div className="flex-row justify-center p-7">
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
-                            {images[index].description}
-                          </p>
-                        </div>
-                      </>
-                    )}
+                    <div className="p-6 bg-gray-50">
+                      <h3 className="font-medium text-gray-900 mb-3 text-sm">
+                        Image Description:
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {images[index].description ||
+                            "No description available."}
+                        </p>
+                      </div>
+                    </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
-
-              <ChatbotModal
-                open={chatbotOpen}
-                onClose={() => setChatbotOpen(false)}
-                askQuestion={askQuestionHandler}
-                suggestedQuestions={suggestedQuestions}
-                title="Ask About this Image"
-              />
             </div>
           </motion.div>
+
+          <ChatbotModal
+            open={chatbotOpen}
+            onClose={() => setChatbotOpen(false)}
+            askQuestion={askQuestionHandler}
+            suggestedQuestions={suggestedQuestions}
+            title="Ask About this Image"
+          />
         </>
       )}
     </AnimatePresence>

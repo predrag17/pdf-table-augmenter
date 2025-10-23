@@ -10,6 +10,8 @@ from pdf_table_augmenter.management.commands.first_case_pdf_table_augmenter impo
 from pdf_table_augmenter.management.commands.pdf_formula_augmenter import extract_formula_descriptions_from_file
 from pdf_table_augmenter.management.commands.pdf_image_augmenter import extract_image_descriptions_from_file
 from pdf_table_augmenter.management.commands.pdf_table_augmenter import extract_table_descriptions_from_file
+from pdf_table_augmenter.management.commands.second_case_pdf_table_augmenter import \
+    extract_table_with_context_descriptions_from_file
 
 
 class ExtractDescriptionAPIView(APIView):
@@ -64,7 +66,7 @@ class AskQuestionAPIView(APIView):
             return Response({"error": f"Error answering question: {str(e)}"}, status=500)
 
 
-class ExtractTableDataOnlyDescriptionForFormulasAPIView(APIView):
+class ExtractTableDataOnlyDescriptionForTablesAPIView(APIView):
     parser_classes = [MultiPartParser]
 
     def post(self, request):
@@ -73,4 +75,16 @@ class ExtractTableDataOnlyDescriptionForFormulasAPIView(APIView):
             return Response({"error": "No file provided."}, status=400)
 
         descriptions = extract_table_data_only_descriptions_from_file(pdf_file)
+        return Response(descriptions)
+
+
+class ExtractContextDescriptionForTablesAPIView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        pdf_file = request.FILES.get("pdf")
+        if not pdf_file:
+            return Response({"error": "No file provided."}, status=400)
+
+        descriptions = extract_table_with_context_descriptions_from_file(pdf_file)
         return Response(descriptions)

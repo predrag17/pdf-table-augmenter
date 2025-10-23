@@ -166,11 +166,13 @@ export default function WelcomePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.9 }}
-          className="text-lg md:text-xl text-gray-700 leading-relaxed max-w-2xl backdrop-blur-sm bg-white/30 rounded-2xl "
+          className="text-lg md:text-xl text-gray-700 leading-relaxed max-w-2xl backdrop-blur-sm bg-white/30 rounded-2xl"
         >
-          Extract <strong className="text-indigo-600">tables</strong>,{" "}
+          Effortlessly extract{" "}
+          <strong className="text-indigo-600">tables</strong>,{" "}
           <strong className="text-purple-600">images</strong>, and{" "}
-          <strong className="text-pink-600">formulas</strong> from your PDFs
+          <strong className="text-pink-600">formulas</strong> from your PDFs,
+          and generate clear, contextual descriptions for each.
         </motion.p>
 
         <motion.div
@@ -186,7 +188,7 @@ export default function WelcomePage() {
               hover:from-indigo-700 hover:to-purple-700
               shadow-2xl hover:shadow-indigo-500/50
               transition-all duration-300 hover:scale-105
-              flex items-center justify-center gap-3 overflow-hidden"
+              flex items-center justify-center gap-3 overflow-hidden cursor-pointer"
           >
             <motion.div
               animate={{ x: [0, 5, 0] }}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useCallback } from "react";
@@ -7,9 +6,6 @@ import FileUploader from "@/components/file-uploader";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import TableModal from "@/components/table-modal";
-import ImageModal from "@/components/image-modal";
-import FormulaModal from "@/components/formula-modal";
 import ExtractPanel from "@/components/extract-panel";
 import { useRouter } from "next/navigation";
 
@@ -17,14 +13,6 @@ export default function UploadPage() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [showExtract, setShowExtract] = useState(false);
-
-  const [tableResults, setTableResults] = useState<any[]>([]);
-  const [imageResults, setImageResults] = useState<any[]>([]);
-  const [formulaResults, setFormulaResults] = useState<any[]>([]);
-  const [tableModalOpen, setTableModalOpen] = useState(false);
-  const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   const router = useRouter();
 
@@ -68,7 +56,7 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-6 py-16">
+    <div className="min-h-screen h-full bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-4xl space-y-12">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -190,46 +178,9 @@ export default function UploadPage() {
 
         <AnimatePresence>
           {showExtract && file && (
-            <ExtractPanel
-              file={file}
-              onClose={() => setShowExtract(false)}
-              onTableResult={(tables) => {
-                setTableResults(tables);
-                setTableModalOpen(true);
-              }}
-              onImageResult={(images) => {
-                setImageResults(images);
-                setImageModalOpen(true);
-              }}
-              onFormulaResult={(formulas) => {
-                setFormulaResults(formulas);
-                setFormulaModalOpen(true);
-              }}
-            />
+            <ExtractPanel file={file} onClose={() => setShowExtract(false)} />
           )}
         </AnimatePresence>
-
-        <TableModal
-          open={tableModalOpen}
-          onClose={() => setTableModalOpen(false)}
-          tables={tableResults}
-          index={currentIndex}
-          setIndex={setCurrentIndex}
-        />
-        <ImageModal
-          open={imageModalOpen}
-          onClose={() => setImageModalOpen(false)}
-          images={imageResults}
-          index={currentIndex}
-          setIndex={setCurrentIndex}
-        />
-        <FormulaModal
-          open={formulaModalOpen}
-          onClose={() => setFormulaModalOpen(false)}
-          formulas={formulaResults}
-          index={currentIndex}
-          setIndex={setCurrentIndex}
-        />
       </div>
     </div>
   );

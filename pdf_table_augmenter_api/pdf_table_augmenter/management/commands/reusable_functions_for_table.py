@@ -111,24 +111,71 @@ def extract_caption(table, body_children, table_index_in_body, texts):
 def generate_table_only_description(table_data_preview: str) -> str:
     cleaned_preview = "\n".join(line.strip() for line in table_data_preview.splitlines() if line.strip())
 
-    prompt = f"""You are a data analyst. Your job is to explain the following table in 2–4 clear sentences.
+    if not cleaned_preview:
+        return "No table data provided."
 
-        Table Data (tab-separated rows):
-        
+    prompt = f"""Describe the following table in 2–4 clear sentences based ONLY on the visible data.
+
+        Table (tab-separated):
         {cleaned_preview}
         
         INSTRUCTIONS:
-        1. If the table is clear (has headers, meaningful rows), explain:
-           - What it shows
-           - Key columns and their meaning
-           - Main insights or trends
-           - Likely purpose
+        - If the table has clear headers and meaningful rows → explain:
+          • What the table shows
+          • Key columns and their likely meaning
+          • Main patterns or insights
+          • Possible purpose
         
-        2. If the table is unclear, incomplete, or meaningless (e.g. missing headers, random numbers, OCR errors), respond with:
+        - If the table is unclear, missing headers, has OCR errors, or lacks meaning → respond:
+          "The table is unclear or incomplete. I cannot provide a reliable description without headers or context."
         
-           "The table data is unclear or incomplete. I cannot provide a reliable description without headers or context."
-        
-        Do NOT hallucinate or make up information. Be honest and concise.
+        Do NOT guess, invent, or assume missing information. Be honest and concise.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=1000
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[LLM ERROR] {str(e)}"
+
+
+def generate_table_with_context_description(
+        before_text,
+        after_text
+):
+    before_lines = [line.strip() for line in before_text.splitlines() if line.strip()]
+    after_lines = [line.strip() for line in after_text.splitlines() if line.strip()]
+
+    before_context = "\n".join(before_lines[-3:])
+    after_context = "\n".join(after_lines[:3])
+
+    if not before_context and not after_context:
+        return "No surrounding text context available."
+
+    prompt = f"""Describe the table below using the surrounding text for context. Use ONLY what is provided.
+                
+                TEXT BEFORE TABLE (up to 3 sentences):
+                {before_context or "None"}
+                
+                TEXT AFTER TABLE (up to 3 sentences):
+                {after_context or "None"}
+                
+                INSTRUCTIONS:
+                - Write 2–4 clear sentences that:
+                  • Explain what the table shows
+                  • Use context to clarify column meanings or purpose
+                  • Highlight key insights or trends
+                  • State the table's role in the document
+                
+                - If context is vague, generic, or irrelevant → respond:
+                  "The surrounding text does not provide meaningful context. Table description is limited to visible data only."
+                
+                - NEVER guess, invent, or assume. Be precise and honest.
     """
 
     try:
