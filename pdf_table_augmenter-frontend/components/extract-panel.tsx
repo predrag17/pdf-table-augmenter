@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TableIcon, Brain, CheckCircle, X } from "lucide-react";
+import { TableIcon, Brain, CheckCircle, X, AlignJustify } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   extractFormulasFromFile,
@@ -186,7 +186,7 @@ export default function ExtractPanel({ file, onClose }: ExtractPanelProps) {
                         : "bg-white hover:border-indigo-500"
                     }`}
                   >
-                    <TableIcon className="w-6 h-6 mx-auto mb-1" />
+                    <AlignJustify className="w-6 h-6 mx-auto mb-1" />
                     <div className="font-semibold">Case 2</div>
                     <div className="text-xs">Before and after context</div>
                   </button>
