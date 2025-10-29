@@ -234,40 +234,40 @@ export default function ExtractPanel({ file, onClose }: ExtractPanelProps) {
             </Button>
           </div>
         </motion.div>
+
+        <TableModal
+          open={tableModalOpen}
+          onClose={() => {
+            setTableModalOpen(false);
+            setCurrentIndex(0);
+          }}
+          tables={tableResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
+
+        <ImageModal
+          open={imageModalOpen}
+          onClose={() => {
+            setImageModalOpen(false);
+            setCurrentIndex(0);
+          }}
+          images={imageResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
+
+        <FormulaModal
+          open={formulaModalOpen}
+          onClose={() => {
+            setFormulaModalOpen(false);
+            setCurrentIndex(0);
+          }}
+          formulas={formulaResults}
+          index={currentIndex}
+          setIndex={setCurrentIndex}
+        />
       </motion.div>
-
-      <TableModal
-        open={tableModalOpen}
-        onClose={() => {
-          setTableModalOpen(false);
-          setCurrentIndex(0);
-        }}
-        tables={tableResults}
-        index={currentIndex}
-        setIndex={setCurrentIndex}
-      />
-
-      <ImageModal
-        open={imageModalOpen}
-        onClose={() => {
-          setImageModalOpen(false);
-          setCurrentIndex(0);
-        }}
-        images={imageResults}
-        index={currentIndex}
-        setIndex={setCurrentIndex}
-      />
-
-      <FormulaModal
-        open={formulaModalOpen}
-        onClose={() => {
-          setFormulaModalOpen(false);
-          setCurrentIndex(0);
-        }}
-        formulas={formulaResults}
-        index={currentIndex}
-        setIndex={setCurrentIndex}
-      />
     </>
   );
 }

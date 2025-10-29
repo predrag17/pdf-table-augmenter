@@ -56,7 +56,7 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen h-full bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-6 py-16">
+    <div className="min-h-screen from-indigo-50 via-white to-purple-50 flex items-center justify-center">
       <div className="w-full max-w-4xl space-y-12">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
